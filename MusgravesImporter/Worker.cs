@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,19 +18,22 @@ namespace MusgravesImporter
         {
             _logger = logger;
         }
-        
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
 
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                //Set time of date when process should  run, this can bet set in the settings json if varies.
-               // if (DateTime.Now.TimeOfDay.Hours == 21 && DateTime.Now.TimeOfDay.Minutes == 55)
-               // {
+                //if (DateTime.Now.DayOfWeek.ToString().ToLower() == "wednesday" && DateTime.Now.TimeOfDay.Hours == 12)
+                //{
+
                     LogFile.Write($"Start Processing on {DateTime.Now}");
+                    _logger.LogInformation($"Start Processing on {DateTime.Now}", DateTimeOffset.Now);
+
                     Process();
-               // }
+                    await Task.Delay(360000, stoppingToken);
+                //}
             }
         }
 
@@ -38,8 +42,36 @@ namespace MusgravesImporter
             ProcessFile process = new ProcessFile();
 
             string path = Settings.GetFileLocation();
-            var fileCount =process.ReadFile(path);
-            LogFile.Write($"{fileCount} rows were processed on {DateTime.Now}");
+            if (IfFileLocationPathExits(path))
+            {
+                var fileCount = process.ReadFile(path);
+                LogFile.Write($"{fileCount} rows were processed on {DateTime.Now}");
+                _logger.LogInformation($"{fileCount} rows were processed on {DateTime.Now}", DateTimeOffset.Now);
+
+            }
+        }
+
+        private bool IfFileLocationPathExits(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    return true;
+                }
+                else
+                {
+                    LogFile.Write($"There is no file or the path {path} does not exits");
+                    _logger.LogInformation($"There is no file or the path {path} does not exits", DateTimeOffset.Now);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+
         }
     }
 }

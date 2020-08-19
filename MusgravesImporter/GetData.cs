@@ -2,6 +2,7 @@
 using Spire.Xls.Collections;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MusgravesImporter
@@ -11,71 +12,96 @@ namespace MusgravesImporter
         public int ReadFile(string fileLocation)
         {
 
+            string[] files = System.IO.Directory.GetFiles(fileLocation, "*.xlsx");
+            if (files.Length < 1) return 0;
             var reportingModel = new List<ReportingModel>();
-         
-            int weekNumberRow = 5;
-            Workbook workbook = new Workbook();
-            workbook.LoadFromFile(fileLocation);
-            WorksheetsCollection sheets = workbook.Worksheets;
-
-          
-
-            foreach (var sheet in sheets)
+            foreach (var file in files)
             {
-                int startingRow = 9;
-                var sheetName = sheet.CodeName;
-                if (sheet.CodeName.ToLower().Contains("household"))
+
+                int weekNumberRow = 5;
+                Workbook workbook = new Workbook();
+                workbook.LoadFromFile(file);
+                WorksheetsCollection sheets = workbook.Worksheets;
+
+
+
+                foreach (var sheet in sheets)
                 {
-                    startingRow = 10;
-                }
-                int columnCount = sheet.Columns.Length;
-                int rowCount = sheet.Rows.Length;
-
-                for (int start = startingRow; start < rowCount; start++)
-                {
-                    var location = sheet.Rows[start].Columns[0].Value;
-                    var weekNumber = sheet.Rows[weekNumberRow].Columns[1].Value;
-
-
-
-                    for (int c = 1; c < columnCount; c++)
+                    int startingRow = 9;
+                    var sheetName = sheet.CodeName;
+                    if (sheet.CodeName.ToLower().Contains("household"))
                     {
-                        var product = sheet.Rows[startingRow - 1].Columns[c].Value;
+                        startingRow = 10;
+                    }
+                    int columnCount = sheet.Columns.Length;
+                    int rowCount = sheet.Rows.Length;
 
-                       var sales =sheet.Rows[start].Columns[c].Value;
+                    for (int start = startingRow; start < rowCount; start++)
+                    {
+                        var location = sheet.Rows[start].Columns[0].Value;
+                        var weekNumber = sheet.Rows[weekNumberRow].Columns[1].Value;
 
 
-                        var data = new ReportingModel
+
+                        for (int c = 1; c < columnCount; c++)
                         {
-                            Location = location,
-                            Week = weekNumber,
-                            Product = product.Split("|")[0],
-                            ProductType = sheetName,
-                            Sales = sales
-                        };
+                            var product = sheet.Rows[startingRow - 1].Columns[c].Value;
 
-                       
-                        reportingModel.Add(data);
+                            var sales = sheet.Rows[start].Columns[c].Value;
+
+                            if (!string.IsNullOrWhiteSpace(sales))
+                            {
+                                var data = new ReportingModel
+                                {
+                                    Location = location,
+                                    Week = weekNumber,
+                                    Product = product,//.Split("|")[0],
+                                    ProductType = sheetName,
+                                    Sales = sales
+                                };
 
 
+                                reportingModel.Add(data);
 
-                     
+                            }
+
+                        }
 
 
-                        //can choose to save file to data warehouse or to a file
 
                     }
-
-
-
                 }
-                CreateFile(reportingModel);
-
-
             }
+            try
+            {
+                CreateFile(reportingModel);
+                MoveFile(files);
+            }
+            catch(Exception ex)
+            {
+                LogFile.Write("An Error has accure white creating entries");
+            }
+
+
+
 
             return reportingModel.Count;
 
+        }
+
+        private void MoveFile(string[] files)
+        {
+            var location = Settings.GetFileLocation() + "OrigianlProcessFiles//";
+            foreach (var file in files)
+            {
+                var filename = file.Split("//")[2];
+                if (!Directory.Exists(location))
+                {
+                    Directory.CreateDirectory(location);
+                }
+
+                File.Move(file, location+filename);
+            }
         }
 
         private void CreateFile(List<ReportingModel> reportingModel)
@@ -83,7 +109,7 @@ namespace MusgravesImporter
             Workbook workbook = new Workbook();
             Worksheet sheet = workbook.Worksheets[0];
 
-            sheet.Name = "Daily Sales";
+            sheet.Name = "Weekly Sales";
             sheet.Range["A1"].Text = $"Musgraves Processed Daily Sales on {DateTime.Now} ";
 
             sheet.Range["A3"].Text = "Product Type";
@@ -105,7 +131,7 @@ namespace MusgravesImporter
                 row++;
             }
 
-            var fileLocation = Settings.GetCreateFileLocation();
+            var fileLocation = Settings.GetCreateFileLocation() + "Processed//";
             workbook.SaveToFile($"{fileLocation}ProcessedFile {week}.xlsx ", ExcelVersion.Version2016);
         }
     }
