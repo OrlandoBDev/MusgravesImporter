@@ -51,7 +51,7 @@ namespace MusgravesImporter
                                     {
                                         Location = location,
                                         Week = weekNumber,
-                                        Product = product.Split("|")[0],
+                                        Product = product.Split("|")[0].Replace("\""," "),
                                         ProductType = category,
                                         Sales = sales
                                     };
@@ -135,6 +135,10 @@ namespace MusgravesImporter
             //before your loop
             foreach (var item in reportingModel)
             {
+                if (string.IsNullOrWhiteSpace(item.Sales))
+                {
+                    item.Sales = "0";
+                }
                 var newLine = string.Format("{0},{1},{2},{3},{4}",item.Week, item.ProductType, item.Location, item.Product, item.Sales);
                 csv.AppendLine(newLine);
             }
