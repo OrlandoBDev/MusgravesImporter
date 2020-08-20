@@ -21,18 +21,19 @@ namespace MusgravesImporter
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-
+            //  var connection = new DbContext();
+            // connection.GetConnection();
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 //if (DateTime.Now.DayOfWeek.ToString().ToLower() == "wednesday" && DateTime.Now.TimeOfDay.Hours == 12)
                 //{
 
-                    LogFile.Write($"Start Processing on {DateTime.Now}");
-                    _logger.LogInformation($"Start Processing on {DateTime.Now}", DateTimeOffset.Now);
+                LogFile.Write($"Start Processing on {DateTime.Now}");
+                _logger.LogInformation($"Start Processing on {DateTime.Now}", DateTimeOffset.Now);
 
-                    Process();
-                    await Task.Delay(360000, stoppingToken);
+                Process();
+                await Task.Delay(360000, stoppingToken);
                 //}
             }
         }

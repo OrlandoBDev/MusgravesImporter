@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 
 namespace MusgravesImporter
 {
@@ -12,83 +14,99 @@ namespace MusgravesImporter
         public int ReadFile(string fileLocation)
         {
 
-            string[] files = System.IO.Directory.GetFiles(fileLocation, "*.xlsx");
+            string[] files = System.IO.Directory.GetFiles(fileLocation, "*.csv");
             if (files.Length < 1) return 0;
             var reportingModel = new List<ReportingModel>();
             foreach (var file in files)
             {
-
-                int weekNumberRow = 5;
-                Workbook workbook = new Workbook();
-                workbook.LoadFromFile(file);
-                WorksheetsCollection sheets = workbook.Worksheets;
-
-
-
-                foreach (var sheet in sheets)
+                using (var stream = File.OpenRead(file))
                 {
-                    int startingRow = 9;
-                    var sheetName = sheet.CodeName;
-                    if (sheet.CodeName.ToLower().Contains("household"))
+                    if (stream == null) return 0;
+                    using (var reader = new StreamReader(stream, Encoding.UTF8))
                     {
-                        startingRow = 10;
-                    }
-                    int columnCount = sheet.Columns.Length;
-                    int rowCount = sheet.Rows.Length;
 
-                    for (int start = startingRow; start < rowCount; start++)
-                    {
-                        var location = sheet.Rows[start].Columns[0].Value;
-                        var weekNumber = sheet.Rows[weekNumberRow].Columns[1].Value;
-
-
-
-                        for (int c = 1; c < columnCount; c++)
+                        var data = EnumerateLines(reader).ToList();
+                        var startingRow = 9;
+                        var category = data[0].Split(",")[0];
+                        if (category.ToLower().Contains("household"))
                         {
-                            var product = sheet.Rows[startingRow - 1].Columns[c].Value;
+                            startingRow = startingRow + 1;
+                        }
+                        for (int x = startingRow; x < data.Count; x++)
+                        {
+                            var weekRow = data[5].Split(",");
+                            var locationRow = data[x].Split(",");
+                            var location = locationRow[0];
+                            var weekNumber = weekRow[2];
+                            var productRow = data[startingRow-1].Split(",");
+                           
 
-                            var sales = sheet.Rows[start].Columns[c].Value;
-
-                            if (!string.IsNullOrWhiteSpace(sales))
+                            for (int y = 1; y < locationRow.Count(); y++)
                             {
-                                var data = new ReportingModel
+                                var product = productRow[y];
+                                var sales = locationRow[y];
+                                if (!string.IsNullOrWhiteSpace(location))
                                 {
-                                    Location = location,
-                                    Week = weekNumber,
-                                    Product = product,//.Split("|")[0],
-                                    ProductType = sheetName,
-                                    Sales = sales
-                                };
+                                    var info = new ReportingModel
+                                    {
+                                        Location = location,
+                                        Week = weekNumber,
+                                        Product = product.Split("|")[0],
+                                        ProductType = category,
+                                        Sales = sales
+                                    };
+                                    reportingModel.Add(info);
+                               }
 
-
-                                reportingModel.Add(data);
 
                             }
 
+
                         }
 
-
+                        try
+                        {
+                            CreateFile(reportingModel);
+                            stream.Close();
+                            MoveFile(files);
+                            return reportingModel.Count;
+                        }
+                        catch (Exception ex)
+                        {
+                            LogFile.Write("An Error has accure white creating entries");
+                            return 0;
+                        }
+                     
 
                     }
+                     
+           
+
+
                 }
-            }
-            try
-            {
-                CreateFile(reportingModel);
-                MoveFile(files);
-            }
-            catch(Exception ex)
-            {
-                LogFile.Write("An Error has accure white creating entries");
+
+
+
+
+
+
             }
 
-
-
-
-            return reportingModel.Count;
-
+            return 0;
         }
 
+        public static IEnumerable<string> EnumerateLines(StreamReader reader)
+        {
+            var lines = new List<string>();
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                lines.Add(line);
+                //yield return line;
+            }
+            Console.WriteLine("Total of {0} lines found", lines.Count);
+            return lines.ToArray();
+        }
         private void MoveFile(string[] files)
         {
             var location = Settings.GetFileLocation() + "OrigianlProcessFiles//";
@@ -100,39 +118,73 @@ namespace MusgravesImporter
                     Directory.CreateDirectory(location);
                 }
 
-                File.Move(file, location+filename);
+                File.Move(file, location + filename);
             }
         }
 
         private void CreateFile(List<ReportingModel> reportingModel)
         {
-            Workbook workbook = new Workbook();
-            Worksheet sheet = workbook.Worksheets[0];
-
-            sheet.Name = "Weekly Sales";
-            sheet.Range["A1"].Text = $"Musgraves Processed Daily Sales on {DateTime.Now} ";
-
-            sheet.Range["A3"].Text = "Product Type";
-            sheet.Range["B3"].Text = "Product";
-            sheet.Range["C3"].Text = "Location";
-            sheet.Range["D3"].Text = "Week Number";
-            sheet.Range["E3"].Text = "Sales";
-
             var week = reportingModel.FirstOrDefault()?.Week;
-            int row = 4;
+
+            var csv = new StringBuilder();
+            var header = "Week, Category, Location,Item, Quantity";
+
+            var fileLocation = Settings.GetCreateFileLocation() + $"Processed//ProcessedFile{week}.csv";
+
+            csv.AppendLine(header);
+            //before your loop
             foreach (var item in reportingModel)
             {
-                sheet.Range[$"A{row}"].Text = item.ProductType;
-                sheet.Range[$"B{row}"].Text = item.Product;
-                sheet.Range[$"C{row}"].Text = item.Location;
-                sheet.Range[$"D{row}"].Text = item.Week;
-                sheet.Range[$"E{row}"].Text = item.Sales??" ";
-
-                row++;
+                var newLine = string.Format("{0},{1},{2},{3},{4}",item.Week, item.ProductType, item.Location, item.Product, item.Sales);
+                csv.AppendLine(newLine);
             }
 
-            var fileLocation = Settings.GetCreateFileLocation() + "Processed//";
-            workbook.SaveToFile($"{fileLocation}ProcessedFile {week}.xlsx ", ExcelVersion.Version2016);
+         
+
+            //after your loop
+            File.WriteAllText(fileLocation, csv.ToString());
+
+
+            //Workbook workbook = new Workbook();
+            //Worksheet sheet = workbook.Worksheets[0];
+
+            //sheet.Name = "Weekly Sales";
+            //sheet.Range["A1"].Text = $"Musgraves Processed Daily Sales on {DateTime.Now} ";
+
+            //sheet.Range["B3"].Text = "Product Type";
+            //sheet.Range["D3"].Text = "Product";
+            //sheet.Range["C3"].Text = "Location";
+            //sheet.Range["A3"].Text = "Week Number";
+            //sheet.Range["E3"].Text = "Sales";
+
+            //var week = reportingModel.FirstOrDefault()?.Week;
+            //int row = 70000;
+            //foreach (var item in reportingModel)
+            //{
+            //    if (string.IsNullOrWhiteSpace(item.Sales))
+            //    {
+            //        var test = 2;
+            //    }
+            //    try
+            //    {
+            //        sheet.Range[$"B{row}"].Text = item.ProductType;
+            //        sheet.Range[$"D{row}"].Text = item.Product;
+            //        sheet.Range[$"C{row}"].Text = item.Location;
+            //        sheet.Range[$"A{row}"].Text = item.Week;
+            //        sheet.Range[$"E{row}"].Text = string.IsNullOrWhiteSpace(item.Sales) ? "0" : item.Sales;
+            //    }
+            //   catch(Exception ex)
+            //    {
+            //        var i = ex.Message;
+            //    }
+
+            //    row++;
+            //}
+
+           
+            //workbook.SaveToFile($"{fileLocation}ProcessedFile {week}.csv ", ExcelVersion.Version2016);
+
+            
         }
     }
 }
