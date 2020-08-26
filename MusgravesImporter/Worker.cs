@@ -33,6 +33,7 @@ namespace MusgravesImporter
                 _logger.LogInformation($"Start Processing on {DateTime.Now}", DateTimeOffset.Now);
 
                 Process();
+               // await StopAsync(stoppingToken);
                 await Task.Delay(360000, stoppingToken);
                 //}
             }

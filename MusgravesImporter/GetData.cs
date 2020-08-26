@@ -27,7 +27,7 @@ namespace MusgravesImporter
 
                         var data = EnumerateLines(reader).ToList();
                         var startingRow = 9;
-                        var category = data[0].Split(",")[0];
+                        var category = file.Split(" ")[1];
                         if (category.ToLower().Contains("household"))
                         {
                             startingRow = startingRow + 1;
@@ -66,6 +66,7 @@ namespace MusgravesImporter
 
                         try
                         {
+                            
                             CreateFile(reportingModel);
                             stream.Close();
                             MoveFile(files);
@@ -104,7 +105,7 @@ namespace MusgravesImporter
                 lines.Add(line);
                 //yield return line;
             }
-            Console.WriteLine("Total of {0} lines found", lines.Count);
+            
             return lines.ToArray();
         }
         private void MoveFile(string[] files)
@@ -143,50 +144,9 @@ namespace MusgravesImporter
                 csv.AppendLine(newLine);
             }
 
-         
 
-            //after your loop
             File.WriteAllText(fileLocation, csv.ToString());
 
-
-            //Workbook workbook = new Workbook();
-            //Worksheet sheet = workbook.Worksheets[0];
-
-            //sheet.Name = "Weekly Sales";
-            //sheet.Range["A1"].Text = $"Musgraves Processed Daily Sales on {DateTime.Now} ";
-
-            //sheet.Range["B3"].Text = "Product Type";
-            //sheet.Range["D3"].Text = "Product";
-            //sheet.Range["C3"].Text = "Location";
-            //sheet.Range["A3"].Text = "Week Number";
-            //sheet.Range["E3"].Text = "Sales";
-
-            //var week = reportingModel.FirstOrDefault()?.Week;
-            //int row = 70000;
-            //foreach (var item in reportingModel)
-            //{
-            //    if (string.IsNullOrWhiteSpace(item.Sales))
-            //    {
-            //        var test = 2;
-            //    }
-            //    try
-            //    {
-            //        sheet.Range[$"B{row}"].Text = item.ProductType;
-            //        sheet.Range[$"D{row}"].Text = item.Product;
-            //        sheet.Range[$"C{row}"].Text = item.Location;
-            //        sheet.Range[$"A{row}"].Text = item.Week;
-            //        sheet.Range[$"E{row}"].Text = string.IsNullOrWhiteSpace(item.Sales) ? "0" : item.Sales;
-            //    }
-            //   catch(Exception ex)
-            //    {
-            //        var i = ex.Message;
-            //    }
-
-            //    row++;
-            //}
-
-           
-            //workbook.SaveToFile($"{fileLocation}ProcessedFile {week}.csv ", ExcelVersion.Version2016);
 
             
         }
