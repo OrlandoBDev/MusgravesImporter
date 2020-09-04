@@ -21,9 +21,7 @@ namespace MusgravesImporter
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            //  var connection = new DbContext();
-            // connection.GetConnection();
-
+           
             while (!stoppingToken.IsCancellationRequested)
             {
                 //if (DateTime.Now.DayOfWeek.ToString().ToLower() == "wednesday" && DateTime.Now.TimeOfDay.Hours == 12)
