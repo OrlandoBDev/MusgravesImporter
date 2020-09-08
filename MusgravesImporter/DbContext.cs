@@ -37,39 +37,39 @@ namespace MusgravesImporter
                 using SqlConnection connection = new SqlConnection(builder.ConnectionString);
 
 
-                DataTable tbl = new DataTable();
-                tbl.Columns.Add(new DataColumn("Week", typeof(string)));
-                tbl.Columns.Add(new DataColumn("Category", typeof(string)));
-                tbl.Columns.Add(new DataColumn("Location", typeof(string)));
-                tbl.Columns.Add(new DataColumn("Item", typeof(string)));
-                tbl.Columns.Add(new DataColumn("Quantity", typeof(Int32)));
+                //DataTable tbl = new DataTable();
+                //tbl.Columns.Add(new DataColumn("Week", typeof(string)));
+                //tbl.Columns.Add(new DataColumn("Category", typeof(string)));
+                //tbl.Columns.Add(new DataColumn("Location", typeof(string)));
+                //tbl.Columns.Add(new DataColumn("Item", typeof(string)));
+                //tbl.Columns.Add(new DataColumn("Quantity", typeof(Int32)));
 
 
-                foreach (var item in model)
-                {
-                    DataRow dr = tbl.NewRow();
-                    dr["Week"] = item.Week;
-                    dr["Category"] = item.ProductType;
-                    dr["Location"] = item.Location.SplitByApostrophe();
-                    dr["Item"] = item.Product.SplitByApostrophe();
-                    dr["Quantity"] = int.Parse(item.Sales);
-                    tbl.Rows.Add(dr);
-                    Console.WriteLine(count);
+                //foreach (var item in model)
+                //{
+                //    DataRow dr = tbl.NewRow();
+                //    dr["Week"] = item.Week;
+                //    dr["Category"] = item.ProductType;
+                //    dr["Location"] = item.Location.SplitByApostrophe();
+                //    dr["Item"] = item.Product.SplitByApostrophe();
+                //    dr["Quantity"] = int.Parse(item.Sales);
+                //    tbl.Rows.Add(dr);
+                //    Console.WriteLine(count);
 
-                    count++;
-                }
-                using SqlBulkCopy ojBulkCopy = new SqlBulkCopy(connection);
-                ojBulkCopy.DestinationTableName = "Test";
+                //    count++;
+                //}
+                //using SqlBulkCopy ojBulkCopy = new SqlBulkCopy(connection);
+                //ojBulkCopy.DestinationTableName = "Test";
 
-                ojBulkCopy.ColumnMappings.Add("Week", "Week");
-                ojBulkCopy.ColumnMappings.Add("Category", "Category");
-                ojBulkCopy.ColumnMappings.Add("Location", "Location");
-                ojBulkCopy.ColumnMappings.Add("Item", "Item");
-                ojBulkCopy.ColumnMappings.Add("Quantity", "Quantity");
+                //ojBulkCopy.ColumnMappings.Add("Week", "Week");
+                //ojBulkCopy.ColumnMappings.Add("Category", "Category");
+                //ojBulkCopy.ColumnMappings.Add("Location", "Location");
+                //ojBulkCopy.ColumnMappings.Add("Item", "Item");
+                //ojBulkCopy.ColumnMappings.Add("Quantity", "Quantity");
 
                 connection.Open();
 
-              ojBulkCopy.WriteToServer(tbl);
+           //   ojBulkCopy.WriteToServer(tbl);
                
          
             }
