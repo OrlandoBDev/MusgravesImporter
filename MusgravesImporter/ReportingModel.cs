@@ -11,6 +11,7 @@ namespace MusgravesImporter
         public string ProductType { get; set; }
         public string Week { get; set; }
         public string Sales { get; set; }
+        public string FileName { get; internal set; }
     }
 
     public class LocationString

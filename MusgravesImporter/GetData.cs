@@ -1,5 +1,4 @@
-﻿using Spire.Xls;
-using Spire.Xls.Collections;
+﻿
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,15 +52,20 @@ namespace MusgravesImporter
                                         var sales = locationRow[y];
                                         if (!string.IsNullOrWhiteSpace(location))
                                         {
-                                            var info = new ReportingModel
+                                            if(!string.IsNullOrWhiteSpace(sales))
                                             {
-                                                Location = location,
-                                                Week = weekNumber,
-                                                Product = product.Split("|")[0].Replace("\"", " "),
-                                                ProductType = category,
-                                                Sales = sales
-                                            };
-                                            reportingModel.Add(info);
+                                                var info = new ReportingModel
+                                                {
+                                                    Location = location,
+                                                    Week = weekNumber,
+                                                    Product = product.Split("|")[0].Replace("\"", " "),
+                                                    ProductType = category,
+                                                    Sales = sales,
+                                                    FileName = fileString[0]
+                                                };
+                                                reportingModel.Add(info);
+                                            }
+                                     
                                         }
 
 
@@ -91,11 +95,11 @@ namespace MusgravesImporter
             }
             try
             {
-
+                reportingModel = reportingModel.OrderBy(a => a.Week).ThenBy(b => b.ProductType).ToList();
                 CreateFile(reportingModel);
                 var context = new DbContext();
                 context.InsertIntoMusgrave(reportingModel);
-                MoveFile(files);
+             
                 return reportingModel.Count;
             }
             catch (Exception ex)
@@ -119,47 +123,52 @@ namespace MusgravesImporter
             
             return lines.ToArray();
         }
-        private void MoveFile(string[] files)
+       
+        private void CreateFile(List<ReportingModel> reportingModels)
         {
-            var location = Settings.GetFileLocation() + "OrigianlProcessFiles//";
-            foreach (var file in files)
+            var reportingModelgroupByWeek = reportingModels.GroupBy(a => a.Week).ToList();
+            foreach(var reportingModel in reportingModelgroupByWeek)
             {
-                var filename = file.Split("//")[2];
-                if (!Directory.Exists(location))
+
+                var week = reportingModel.FirstOrDefault()?.Week;
+
+                var csv = new StringBuilder();
+                var header = "Week, Category, Location,Item, Quantity";
+
+                var fileLocation = Settings.GetCreateFileLocation() + $"Processed";
+
+
+
+                csv.AppendLine(header);
+                //before your loop
+                foreach (var item in reportingModel)
                 {
-                    Directory.CreateDirectory(location);
+                    if (string.IsNullOrWhiteSpace(item.Sales))
+                    {
+                        item.Sales = "0";
+                    }
+                    var newLine = string.Format("{0},{1},{2},{3},{4}", item.Week, item.ProductType, item.Location, item.Product, item.Sales);
+                    csv.AppendLine(newLine);
                 }
+                var file = "";
 
-                File.Move(file, location + filename);
-            }
-        }
-
-        private void CreateFile(List<ReportingModel> reportingModel)
-        {
-            var week = reportingModel.FirstOrDefault()?.Week;
-
-            var csv = new StringBuilder();
-            var header = "Week, Category, Location,Item, Quantity";
-
-            var fileLocation = Settings.GetCreateFileLocation() + $"Processed//ProcessedFile {week}.csv";
-
-            csv.AppendLine(header);
-            //before your loop
-            foreach (var item in reportingModel)
-            {
-                if (string.IsNullOrWhiteSpace(item.Sales))
+                if (!Directory.Exists(fileLocation))
                 {
-                    item.Sales = "0";
+                    Directory.CreateDirectory(fileLocation);
                 }
-                var newLine = string.Format("{0},{1},{2},{3},{4}",item.Week, item.ProductType, item.Location, item.Product, item.Sales);
-                csv.AppendLine(newLine);
+              
+                    var filename = $"Radius ProcessedFile-{week}.csv";
+                     file = Path.Combine(fileLocation, filename);
+                 
+               
+
+             
+         
+                File.WriteAllText(file, csv.ToString());
+               
+
             }
 
-
-            File.WriteAllText(fileLocation, csv.ToString());
-
-
-            
         }
     }
 }
