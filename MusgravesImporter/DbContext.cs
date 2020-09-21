@@ -19,7 +19,7 @@ namespace MusgravesImporter
             builder.UserID = "interlinc.reporting";
             builder.Password = "Thusshare12";
             builder.InitialCatalog = "REPORTING";
-            //builder.ConnectTimeout = 120;
+
 
             //builder.DataSource = "interlincmiddlewaredbserver.database.windows.net";
             //builder.UserID = "ob";
@@ -93,7 +93,15 @@ namespace MusgravesImporter
             }
             catch (Exception e)
             {
-                
+
+                var mail = new Email();
+                mail.SendEmail(new EmailMessage
+                {
+                    Subject = "Radius Importer Error",
+                    Body = e.Message,
+                    DestinationList = new List<string> {"orlando.blackwood@interlincgroup.com"},
+
+                });
                 LogFile.Write(e.Message);
 
             }

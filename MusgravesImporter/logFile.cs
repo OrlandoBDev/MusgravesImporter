@@ -13,7 +13,7 @@ namespace MusgravesImporter
         {
 
             var Date = $"{DateTime.Now.Day}-{DateTime.Now.Month}-{DateTime.Now.Year}";
-            var filePath = $@"{BasePath}/{Date}-LogFile.txt";
+            var filePath = $@"{Settings.GetFileLocation()}/{Date}-LogFile.txt";
 
 
             using (var sw = new StreamWriter(filePath, true))
